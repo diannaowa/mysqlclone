@@ -20,7 +20,7 @@ class MySQLClone2(object):
 			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
 
 		try:
-			self.dstConn=MySQLdb.connect(host=kwargs['dstHost'],user=kwargs['dstUser'],passwd=kwargs['dstPasswd'],port=kwargs['dstPort'])
+			self.dstConn=MySQLdb.connect(host=kwargs['dstHost'],user=kwargs['dstUser'],passwd=kwargs['dstPasswd'],port=kwargs['dstPort'],local_infile=1)
 			self.dstCur=self.dstConn.cursor()
 			self.dstConn.select_db(kwargs['dstDb'])
 			self.dstCur.execute("SET NAMES utf8;")
