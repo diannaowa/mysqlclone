@@ -8,7 +8,7 @@ __author__ = "liuzhenwei"
 class MySQLClone2(object):
 
 	def __init__(self,**kwargs):
-		print >> sys.stdout,"[%s] INFO: - Start clone database [%s:%s] To [%s:%s]" %(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),kwargs['sourceHost'],kwargs['sourceDb'],kwargs['dstHost'],kwargs['dstDb'])
+		
 		self.sourceTable = kwargs['sourceTable']
 		self.noData = kwargs['noData']
 		try:
@@ -76,9 +76,9 @@ class MySQLClone2(object):
 		self.__dstColse()
 
 if __name__ == "__main__":
-	k = {"sourceHost":"127.0.0.1","sourceUser":"root","sourcePasswd":"chrdw.com","sourceDb":"yishiwei","sourceTable":"","noData":True,
+	conInfo = {"sourceHost":"127.0.0.1","sourceUser":"root","sourcePasswd":"chrdw.com","sourceDb":"yishiwei","sourceTable":"","noData":True,
 		"dstHost":"127.0.0.1","dstUser":"root","dstPasswd":"chrdw.com","dstDb":"test","sourcePort":3306,"dstPort":3306
 		}
-
-	m = MySQLClone2(**k)
+	print >> sys.stdout,"[%s] INFO: - Start clone database [%s:%s] To [%s:%s]" %(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),conInfo['sourceHost'],conInfo['sourceDb'],conInfo['dstHost'],conInfo['dstDb'])
+	m = MySQLClone2(**conInfo)
 	m.clone()
