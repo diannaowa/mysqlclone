@@ -4,7 +4,7 @@ It’s used to transfer a mysql database to the other.
 
 # How to use it?
 ```
-[root@iZ2876x9bezZ yishiwei]# python mysqlclone.py --help
+[root@iZ2876x9bezZ ~]# python mysqlclone.py --help
 usage: mysqlclone.py [-h] [--sourceHost SOURCEHOST] [--sourcePort SOURCEPORT]
                      [--sourcePasswd SOURCEPASSWD] [--sourceUser SOURCEUSER]
                      [--sourceDb SOURCEDB] [--dstDb DSTDB]
@@ -32,4 +32,6 @@ optional arguments:
                         The dst databas passwd,default[NULL]
   --dstUser DSTUSER     The dst databas username,default[root]
   --noData NODATA       No row information;[True|False] False is default
+  
+  [root@iZ2876x9bezZ ~]# python mysqlclone.py --sourceHost 127.0.0.1 --sourceUser root --sourcePasswd xxx --dstHost 127.0.0.1 --dstUser root --dstPasswd xxx --sourceDb test --dstDb test2 --noData True
   ```
