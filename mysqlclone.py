@@ -11,11 +11,13 @@ class MySQLClone(object):
 		self.pid = os.getpid()
 		self.sourceTable = kwargs['sourceTable']
 		self.noData = kwargs['noData']
+		self.lockAllTables = kwargs['lockAllTables']
 		try:
 			self.sourceConn=MySQLdb.connect(host=kwargs['sourceHost'],user=kwargs['sourceUser'],passwd=kwargs['sourcePasswd'],port=kwargs['sourcePort'])
 			self.sourceCur=self.sourceConn.cursor()
 			self.sourceConn.select_db(kwargs['sourceDb'])
 			self.sourceCur.execute("SET NAMES utf8;")
+			self.sourceCur.execute("SET AUTOCOMMIT=0;")
 		except MySQLdb.Error,e:
 			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
 
@@ -49,6 +51,9 @@ class MySQLClone(object):
 
 
 	def __cloneSingleTable(self,table):
+		#lock single table
+		if not self.lockAllTables:
+			self.sourceCur.execute("LOCK TABLES %s READ;"% table)
 		#create table
 		count = self.sourceCur.execute('SHOW CREATE TABLE %s;' % table)
 		results=self.sourceCur.fetchone()
@@ -84,8 +89,16 @@ class MySQLClone(object):
 	def __cloneDatabase(self):
 		count = self.sourceCur.execute('SHOW TABLES;')
 		results=self.sourceCur.fetchall()
+		tableList = []
 		for table in results:
-			self.__cloneSingleTable(table[0])
+			tableList.append(table[0])
+		#lock all tables
+		if self.lockAllTables:
+			lockSQL = "LOCK TABLES %s;" % ','.join([t+' READ' for t in tableList])
+			self.sourceCur.execute(lockSQL)
+
+		for t in tableList:
+			self.__cloneSingleTable(t)
 
 	def __printInfo(self,table):
 		'''
@@ -95,6 +108,8 @@ class MySQLClone(object):
 		print >> sys.stdout,"[%s] INFO: - table [%s] was transferred." % (curTime,table)
 
 	def __del__(self):
+		self.sourceCur.execute("COMMIT;")
+		self.sourceCur.execute("UNLOCK TABLES;")
 		self.__dstCommit()
 		self.__sourceColse()
 		self.__dstColse()
@@ -116,6 +131,8 @@ if __name__ == "__main__":
 
 	parser.add_argument('--noData',action='store',dest='noData',default=False,help='No row information;[True|False] False is default')
 	
+	parser.add_argument('--lock-all-tables',action='store',dest='lockAllTables',default=False,help='Locks all tables,default[False:Lock the table to be read]')
+
 	args = parser.parse_args()
 
 	if args.sourceDb is None:
@@ -138,7 +155,8 @@ if __name__ == "__main__":
 		"dstPasswd":args.dstPasswd,
 		"dstDb":args.dstDb,
 		"sourcePort":args.sourcePort,
-		"dstPort":args.dstPort
+		"dstPort":args.dstPort,
+		"lockAllTables":args.lockAllTables
 		}
 	print >> sys.stdout,"[%s] INFO: - Start clone database [%s:%s] To [%s:%s]" %(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),conInfo['sourceHost'],conInfo['sourceDb'],conInfo['dstHost'],conInfo['dstDb'])
 	
