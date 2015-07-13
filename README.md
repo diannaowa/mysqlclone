@@ -10,7 +10,8 @@ usage: mysqlclone.py [-h] [--sourceHost SOURCEHOST] [--sourcePort SOURCEPORT]
                      [--sourceDb SOURCEDB] [--dstDb DSTDB]
                      [--sourceTable SOURCETABLE] [--dstHost DSTHOST]
                      [--dstPort DSTPORT] [--dstPasswd DSTPASSWD]
-                     [--dstUser DSTUSER] [--noData NODATA]
+                     [--dstUser DSTUSER] [--no-data] [--lock-all-tables]
+                     [--events] [--routines] [--triggers]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -31,7 +32,15 @@ optional arguments:
   --dstPasswd DSTPASSWD
                         The dst databas passwd,default[NULL]
   --dstUser DSTUSER     The dst databas username,default[root]
-  --noData NODATA       No row information;[True|False] False is default
+  --no-data, -d         No row information;False is default
+  --lock-all-tables, -X
+                        Locks all tables,default[False:Lock the table to be
+                        read]
+  --events, -E          Clone events,default[False]
+  --routines, -R        Clone stored routines (functions and
+                        procedures),default[False]
+  --triggers            Clone triggers for each dumped
+                        table,default[False]
   
   [root@iZ2876x9bezZ ~]# python mysqlclone.py --sourceHost 127.0.0.1 --sourceUser root --sourcePasswd xxx --dstHost 127.0.0.1 --dstUser root --dstPasswd xxx --sourceDb test --dstDb test2 --no-data -E -R -X
   
