@@ -135,8 +135,6 @@ class DatabaseClone(Clone):
 	def clone(self):
 		tableList = []
 		if self.sourceTable:
-			#lock single table
-			self.sourceCur.execute("LOCK TABLES %s READ;"% table)
 			tableList.append(self.sourceTable)
 		else:
 			count = self.sourceCur.execute('SHOW TABLES;')
@@ -149,6 +147,9 @@ class DatabaseClone(Clone):
 				self.sourceCur.execute(lockSQL)
 
 		for t in tableList:
+			#lock single table
+			if not self.lockAllTables:
+				self.sourceCur.execute("LOCK TABLES %s READ;"% t)
 			self.__cloneSingleTable(t)
 		
 		if self.lockAllTables:
@@ -272,7 +273,7 @@ if __name__ == "__main__":
 
 	parser.add_argument('--events','-E',action='store_true',dest='events',help='Clone events,default[False]')
 	parser.add_argument('--routines','-R',action='store_true',dest='routines',help='Clone stored routines (functions and procedures),default[False]')
-	parser.add_argument('--triggers',action='store_true',dest='triggers',help='Clone Dump triggers for each dumped table,default[False]')
+	parser.add_argument('--triggers',action='store_true',dest='triggers',help='Clone triggers for each dumped table,default[False]')
 
 	args = parser.parse_args()
 
