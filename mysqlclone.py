@@ -8,6 +8,16 @@ __version__ = "1.1"
 
 class Clone():
 	__metaclass__ = ABCMeta
+
+	def __init__(self,**kwargs):
+		self.pid = os.getpid()
+		self.sourceCur = kwargs['sourceCur']
+		self.dstCur =  kwargs['dstCur']
+		self.noData =  kwargs['noData']
+		self.sourceTable =  kwargs['sourceTable']
+		self.lockAllTables =  kwargs['lockAllTables']
+		self.sourceDb = kwargs['sourceDb']
+		#print kwargs
 	@abstractmethod
 	def clone(self):
 		pass
@@ -21,6 +31,7 @@ class MySQLClone(object):
 		self.triggers = kwargs['triggers']
 		self.routines = kwargs['routines']
 		self.events = kwargs['events']
+		self.sourceDb = kwargs['sourceDb']
 		try:
 			self.sourceConn=MySQLdb.connect(host=kwargs['sourceHost'],user=kwargs['sourceUser'],passwd=kwargs['sourcePasswd'],port=kwargs['sourcePort'])
 			self.sourceCur=self.sourceConn.cursor()
@@ -56,19 +67,21 @@ class MySQLClone(object):
 		kwargs['noData'] = self.noData
 		kwargs['sourceTable'] = self.sourceTable
 		kwargs['lockAllTables'] = self.lockAllTables
+		kwargs['sourceDb'] = self.sourceDb
 		c = DatabaseClone(**kwargs)
 		c.clone()
 
 		if self.triggers:
-			t = TriggersClone()
+			t = TriggersClone(**kwargs)
 			t.clone()
 
 		if self.routines:
-			r = RoutinesClone()
+			#print kwargs
+			r = RoutinesClone(**kwargs)
 			r.clone()
 
 		if self.events:
-			e = EventsClone()
+			e = EventsClone(**kwargs)
 			e.clone()
 
 	def __del__(self):
@@ -82,12 +95,7 @@ class DatabaseClone(Clone):
 	clone database
 	'''
 	def __init__(self,**kwargs):
-		self.pid = os.getpid()
-		self.sourceCur = kwargs['sourceCur']
-		self.dstCur =  kwargs['dstCur']
-		self.noData =  kwargs['noData']
-		self.sourceTable =  kwargs['sourceTable']
-		self.lockAllTables =  kwargs['lockAllTables']
+		Clone.__init__(self,**kwargs)
 	def __cloneSingleTable(self,table):
 		#create table
 		count = self.sourceCur.execute('SHOW CREATE TABLE %s;' % table)
@@ -99,7 +107,7 @@ class DatabaseClone(Clone):
 			return False
 		else:
 			if self.noData:
-				PrintInfo.say(table)
+				PrintInfo.say('table',table)
 		#load data
 		if not self.noData:
 			tmpFile = '/tmp/'+table+'_'+str(self.pid)
@@ -122,7 +130,7 @@ class DatabaseClone(Clone):
 			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
 		else:
 			os.remove(dataFile)
-			PrintInfo.say(table)
+			PrintInfo.say('table',table)
 
 	def clone(self):
 		tableList = []
@@ -152,34 +160,94 @@ class EventsClone(Clone):
 	'''
 	clone events
 	'''
+	def __init__(self,**kwargs):
+		pass
 	def clone(self):
-		print "events"
+		print "clone events"
 
 class TriggersClone(Clone):
 	'''
 	clone triggers
 	'''
+	def __init__(self,**kwargs):
+		pass
 	def clone(self):
 		print "clone triggers"
 
 class RoutinesClone(Clone):
 	'''
-	clone routines (functions and procedures
+	clone routines (functions and procedures).
 	'''
+	def __init__(self,**kwargs):
+		Clone.__init__(self,**kwargs)
+
 	def clone(self):
-		print "clone rountines"
+		for proc in self.__getProcList():
+			self.__cloneProc(proc)
+
+		for func in self.__getFunctionList():
+			self.__cloneFunc(func)
+
+	def __getProcList(self):
+		try:
+			count = self.sourceCur.execute("SHOW PROCEDURE STATUS WHERE db='%s';" % (self.sourceDb))
+			results=self.sourceCur.fetchall()
+		except MySQLdb.Error,e:
+			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+		else:
+			for proc in results:
+				yield proc[1]
+
+	def __cloneProc(self,proc):
+		try:
+			count = self.sourceCur.execute("SHOW CREATE PROCEDURE %s;" % proc)
+			results=self.sourceCur.fetchone()
+		except MySQLdb.Error,e:
+			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+
+		else:
+			try:
+				self.dstCur.execute(results[2])
+			except MySQLdb.Error,e:
+				print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+			else:
+				PrintInfo.say('procedure',proc)
+	def __getFunctionList(self):
+		try:
+			count = self.sourceCur.execute("SHOW FUNCTION STATUS WHERE db='%s';" % (self.sourceDb))
+			results=self.sourceCur.fetchall()
+		except MySQLdb.Error,e:
+			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+		else:
+			for func in results:
+				yield func[1]
+
+	def __cloneFunc(self,func):
+		try:
+			count = self.sourceCur.execute("SHOW CREATE FUNCTION %s;" % func)
+			results=self.sourceCur.fetchone()
+		except MySQLdb.Error,e:
+			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+
+		else:
+			try:
+				self.dstCur.execute(results[2])
+			except MySQLdb.Error,e:
+				print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+			else:
+				PrintInfo.say('function',func)
 
 class PrintInfo(object):
 	'''
 	print info
 	'''
 	@staticmethod
-	def say(table):
+	def say(item,name):
 		'''
-			print info 
+		print info 
 		'''
 		curTime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
-		print >> sys.stdout,"[%s] INFO: - table [%s] was transferred." % (curTime,table)
+		print >> sys.stdout,"[%s] INFO: - %s [%s] was transferred." % (curTime,item,name)
 
 
 
@@ -198,12 +266,12 @@ if __name__ == "__main__":
 	parser.add_argument('--dstPasswd',action='store',dest='dstPasswd',default="",help='The dst databas passwd,default[NULL]')
 	parser.add_argument('--dstUser',action='store',dest='dstUser',default='root',help='The dst databas username,default[root]')
 
-	parser.add_argument('--noData',action='store_true',dest='noData',help='No row information;False is default')
+	parser.add_argument('--no-data','-d',action='store_true',dest='noData',help='No row information;False is default')
 	
-	parser.add_argument('--lock-all-tables',action='store_true',dest='lockAllTables',help='Locks all tables,default[False:Lock the table to be read]')
+	parser.add_argument('--lock-all-tables','-X',action='store_true',dest='lockAllTables',help='Locks all tables,default[False:Lock the table to be read]')
 
-	parser.add_argument('--events',action='store_true',dest='events',help='Clone events,default[False]')
-	parser.add_argument('--routines',action='store_true',dest='routines',help='Clone stored routines (functions and procedures),default[False]')
+	parser.add_argument('--events','-E',action='store_true',dest='events',help='Clone events,default[False]')
+	parser.add_argument('--routines','-R',action='store_true',dest='routines',help='Clone stored routines (functions and procedures),default[False]')
 	parser.add_argument('--triggers',action='store_true',dest='triggers',help='Clone Dump triggers for each dumped table,default[False]')
 
 	args = parser.parse_args()
@@ -231,7 +299,7 @@ if __name__ == "__main__":
 		"dstPort":args.dstPort,
 		"lockAllTables":args.lockAllTables,
 		"events":args.events,
-		"routines":args.events,
+		"routines":args.routines,
 		"triggers":args.triggers
 		}
 	print >> sys.stdout,"[%s] INFO: - Start clone database [%s:%s] To [%s:%s]" %(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())),conInfo['sourceHost'],conInfo['sourceDb'],conInfo['dstHost'],conInfo['dstDb'])
