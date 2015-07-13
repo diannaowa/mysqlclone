@@ -33,7 +33,7 @@ optional arguments:
   --dstUser DSTUSER     The dst databas username,default[root]
   --noData NODATA       No row information;[True|False] False is default
   
-  [root@iZ2876x9bezZ ~]# python mysqlclone.py --sourceHost 127.0.0.1 --sourceUser root --sourcePasswd xxx --dstHost 127.0.0.1 --dstUser root --dstPasswd xxx --sourceDb test --dstDb test2 --noData True
+  [root@iZ2876x9bezZ ~]# python mysqlclone.py --sourceHost 127.0.0.1 --sourceUser root --sourcePasswd xxx --dstHost 127.0.0.1 --dstUser root --dstPasswd xxx --sourceDb test --dstDb test2 --events --routines --triggers
   
   [2015-07-10 11:44:44] INFO: - Start clone database [127.0.0.1:test] To [127.0.0.1:test2]
 [2015-07-10 11:44:44] INFO: - table [pcore_information_information] was transferred.
