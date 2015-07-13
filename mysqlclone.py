@@ -77,11 +77,10 @@ class MySQLClone(object):
 		self.__dstColse()
 
 
-'''
-clone database
-'''
-
 class DatabaseClone(Clone):
+	'''
+	clone database
+	'''
 	def __init__(self,**kwargs):
 		self.pid = os.getpid()
 		self.sourceCur = kwargs['sourceCur']
