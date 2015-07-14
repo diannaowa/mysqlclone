@@ -1,6 +1,6 @@
 # mysqlclone
 
-It’s used to transfer a mysql database to the other.
+It’s used to transfer a mysql database to the other.Clone MySQL database.
 
 # How to use it?
 ```
