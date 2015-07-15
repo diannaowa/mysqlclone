@@ -46,6 +46,9 @@ class MySQLClone(object):
 			self.dstCur=self.dstConn.cursor()
 			self.dstConn.select_db(kwargs['dstDb'])
 			self.dstCur.execute("SET NAMES utf8;")
+			#stop bin log
+			self.dstCur.execute("SET sql_log_bin=0;")
+			#
 		except MySQLdb.Error,e:
 			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
 
