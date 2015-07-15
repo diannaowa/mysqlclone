@@ -4,7 +4,7 @@
 import MySQLdb,datetime,sys,time,os,argparse
 from abc import ABCMeta, abstractmethod
 __author__ = "liuzhenwei"
-__version__ = "1.1"
+__version__ = "1.2"
 
 class Clone():
 	__metaclass__ = ABCMeta
@@ -165,9 +165,35 @@ class EventsClone(Clone):
 	clone events
 	'''
 	def __init__(self,**kwargs):
-		pass
+		Clone.__init__(self,**kwargs)
 	def clone(self):
-		print "clone events"
+		for event in self.__getEventList():
+			self.__cloneEvent(event)
+
+	def __getEventList(self):
+		try:
+			count = self.sourceCur.execute("SHOW EVENTS;")
+			results=self.sourceCur.fetchall()
+		except MySQLdb.Error,e:
+			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+		else:
+			for event in results:
+				yield event[1]
+
+	def __cloneEvent(self,event):
+		try:
+			count = self.sourceCur.execute("SHOW CREATE EVENT %s;" % event)
+			results=self.sourceCur.fetchone()
+		except MySQLdb.Error,e:
+			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+
+		else:
+			try:
+				self.dstCur.execute(results[3])
+			except MySQLdb.Error,e:
+				print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
+			else:
+				PrintInfo.say('event',event)
 
 class TriggersClone(Clone):
 	'''
