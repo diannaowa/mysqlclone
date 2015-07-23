@@ -37,7 +37,7 @@ class MySQLClone(object):
 			self.sourceCur=self.sourceConn.cursor()
 			self.sourceConn.select_db(kwargs['sourceDb'])
 			self.sourceCur.execute("SET NAMES utf8;")
-			self.sourceCur.execute("SET AUTOCOMMIT=0;")
+			#self.sourceCur.execute("SET AUTOCOMMIT=0;")
 		except MySQLdb.Error,e:
 			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
 
@@ -46,9 +46,11 @@ class MySQLClone(object):
 			self.dstCur=self.dstConn.cursor()
 			self.dstConn.select_db(kwargs['dstDb'])
 			self.dstCur.execute("SET NAMES utf8;")
+			self.dstCur.execute("SET AUTOCOMMIT=0;")
 			#stop bin log
 			self.dstCur.execute("SET sql_log_bin=0;")
 			#
+			#self.dstCur.execute("SET GLOBAL innodb_flush_log_at_trx_commit=2;")
 		except MySQLdb.Error,e:
 			print >> sys.stderr,"Mysql Error %d: %s" % (e.args[0], e.args[1])
 
